@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BreedScan — Cattle Breed AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1e2530;
+  --border: #2a3240;
+  --accent: #e8a838;
+  --accent2: #f0c060;
+  --text: #e6edf3;
+  --muted: #7d8590;
+  --success: #3fb950;
+  --error: #f85149;
+  --radius: 14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+/* Animated background */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,#1a2a1a 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,#1a1a2e 0%,transparent 60%);pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,17,23,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--accent);font-weight:700;letter-spacing:-0.5px;cursor:pointer}
+.logo span{color:var(--text)}
+.nav-actions{display:flex;gap:0.75rem;align-items:center}
+.nav-tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:0.4rem 1rem;border-radius:8px;cursor:pointer;font-size:0.85rem;transition:all 0.2s;font-family:'DM Sans',sans-serif}
+.nav-tab:hover,.nav-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(232,168,56,0.08)}
+.btn{padding:0.45rem 1.2rem;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:500;transition:all 0.2s;border:none}
+.btn-primary{background:var(--accent);color:#0d1117}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--muted);color:var(--text)}
+.user-badge{display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;color:var(--accent);background:rgba(232,168,56,0.1);padding:0.35rem 0.75rem;border-radius:8px;border:1px solid rgba(232,168,56,0.25)}
+
+/* PAGES */
+.page{display:none;min-height:100vh;padding-top:60px;position:relative;z-index:1}
+.page.active{display:block}
+
+/* HERO */
+.hero{text-align:center;padding:5rem 2rem 3rem;max-width:700px;margin:0 auto}
+.hero-badge{display:inline-block;font-size:0.75rem;color:var(--accent);background:rgba(232,168,56,0.12);border:1px solid rgba(232,168,56,0.3);padding:0.3rem 0.9rem;border-radius:20px;margin-bottom:1.5rem;letter-spacing:1px;text-transform:uppercase}
+.hero h1{font-family:'Playfair Display',serif;font-size:3.2rem;font-weight:700;line-height:1.15;margin-bottom:1rem}
+.hero h1 em{color:var(--accent);font-style:normal}
+.hero p{color:var(--muted);font-size:1.05rem;line-height:1.6;max-width:500px;margin:0 auto 2rem}
+.breeds-strip{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:2.5rem}
+.breed-chip{font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:20px;border:1px solid var(--border);color:var(--muted);background:var(--surface)}
+
+/* DROP ZONE */
+.upload-section{max-width:640px;margin:0 auto;padding:0 1.5rem 3rem}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:3rem 2rem;text-align:center;cursor:pointer;transition:all 0.3s;background:var(--surface);position:relative;overflow:hidden}
+.drop-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(232,168,56,0.04) 0%,transparent 70%);opacity:0;transition:opacity 0.3s}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(232,168,56,0.04)}
+.drop-zone:hover::before,.drop-zone.drag-over::before{opacity:1}
+.drop-zone input[type=file]{display:none}
+.drop-icon{font-size:3rem;margin-bottom:1rem;display:block}
+.drop-zone h3{font-size:1.1rem;margin-bottom:0.5rem;font-weight:500}
+.drop-zone p{color:var(--muted);font-size:0.875rem}
+.file-types{margin-top:0.75rem;font-size:0.75rem;color:var(--muted)}
+
+/* PREVIEW */
+.preview-container{display:none;margin-top:1.5rem;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:var(--surface)}
+.preview-img-wrap{position:relative;max-height:320px;overflow:hidden}
+.preview-img-wrap img{width:100%;height:320px;object-fit:cover;display:block}
+.preview-controls{padding:1rem;display:flex;gap:0.75rem;align-items:center}
+.preview-name{flex:1;font-size:0.85rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-predict{width:100%;margin-top:1rem;padding:0.85rem;border-radius:10px;background:var(--accent);color:#0d1117;font-weight:600;font-size:1rem;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem}
+.btn-predict:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-predict:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* LOADING */
+.spinner{width:20px;height:20px;border:2px solid rgba(0,0,0,0.2);border-top-color:#0d1117;border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* RESULT CARD */
+.result-card{display:none;margin-top:1.5rem;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);animation:slideUp 0.4s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.result-header{padding:1.5rem;display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:start;background:var(--surface)}
+.result-badge{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+.result-title{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;line-height:1.2}
+.result-subtitle{font-size:0.8rem;color:var(--muted);margin-top:0.25rem}
+.confidence-ring{text-align:center}
+.confidence-pct{font-size:1.8rem;font-weight:700;color:var(--accent);line-height:1}
+.confidence-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+
+/* TABS */
+.result-tabs{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface)}
+.r-tab{flex:1;padding:0.75rem;font-size:0.8rem;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.2s;font-family:'DM Sans',sans-serif;background:transparent;border-top:none;border-left:none;border-right:none}
+.r-tab:hover,.r-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.result-body{padding:1.5rem;background:var(--surface2)}
+.tab-pane{display:none}
+.tab-pane.active{display:block;animation:fadeIn 0.25s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* INFO GRID */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.info-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.875rem}
+.info-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:0.3rem}
+.info-value{font-size:0.9rem;font-weight:500}
+.info-desc{margin-top:1rem;color:var(--muted);font-size:0.875rem;line-height:1.6;padding:0.875rem;background:var(--surface);border-radius:10px;border:1px solid var(--border)}
+
+/* PROBABILITY BARS */
+.prob-list{display:flex;flex-direction:column;gap:0.6rem}
+.prob-item{display:grid;grid-template-columns:140px 1fr 48px;gap:0.75rem;align-items:center}
+.prob-name{font-size:0.8rem;font-weight:500}
+.prob-bar-bg{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.prob-bar-fill{height:100%;border-radius:4px;transition:width 0.8s ease;background:var(--accent)}
+.prob-bar-fill.top{background:var(--accent)}
+.prob-bar-fill.other{background:var(--muted)}
+.prob-pct{font-size:0.8rem;color:var(--muted);text-align:right}
+
+/* SAVE BTN */
+.save-row{margin-top:1rem;display:flex;gap:0.75rem}
+.btn-save{flex:1;padding:0.65rem;border-radius:8px;border:1px solid var(--accent);color:var(--accent);background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;transition:all 0.2s}
+.btn-save:hover{background:rgba(232,168,56,0.1)}
+.btn-compare-add{flex:1;padding:0.65rem;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:transparent;font-family:'DM Sans',sans-serif;font-size:0.875rem;cursor:pointer;transition:all 0.2s}
+.btn-compare-add:hover{border-color:var(--muted);color:var(--text)}
+
+/* COMPARE PAGE */
+.page-inner{max-width:1000px;margin:0 auto;padding:2rem 1.5rem}
+.page-title{font-family:'Playfair Display',serif;font-size:2rem;margin-bottom:0.5rem}
+.page-sub{color:var(--muted);font-size:0.9rem;margin-bottom:2rem}
+.compare-select-row{display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:2rem;align-items:center}
+.breed-select-btn{padding:0.5rem 1rem;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:var(--surface);font-family:'DM Sans',sans-serif;font-size:0.85rem;cursor:pointer;transition:all 0.2s}
+.breed-select-btn.selected{border-color:var(--accent);color:var(--accent);background:rgba(232,168,56,0.08)}
+.compare-table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;background:var(--surface)}
+th{padding:1rem;background:var(--surface2);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:left;border-bottom:1px solid var(--border)}
+td{padding:0.875rem 1rem;font-size:0.875rem;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
+td:first-child{color:var(--muted);font-size:0.8rem;font-weight:500}
+.highlight-cell{color:var(--accent);font-weight:600}
+
+/* HISTORY PAGE */
+.history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.history-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:transform 0.2s,border-color 0.2s;cursor:pointer}
+.history-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.hc-img{width:100%;height:160px;object-fit:cover;background:var(--surface2)}
+.hc-body{padding:1rem}
+.hc-breed{font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:0.25rem}
+.hc-meta{display:flex;justify-content:space-between;align-items:center}
+.hc-conf{font-size:0.8rem;color:var(--accent)}
+.hc-date{font-size:0.75rem;color:var(--muted)}
+.hc-del{padding:0.3rem 0.6rem;font-size:0.75rem;border-radius:6px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;margin-top:0.5rem;font-family:'DM Sans',sans-serif}
+.hc-del:hover{border-color:var(--error);color:var(--error)}
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--muted)}
+.empty-icon{font-size:3rem;margin-bottom:1rem}
+
+/* AUTH PAGE */
+.auth-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:2rem}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem;width:100%;max-width:400px}
+.auth-title{font-family:'Playfair Display',serif;font-size:1.75rem;margin-bottom:0.4rem}
+.auth-sub{color:var(--muted);font-size:0.875rem;margin-bottom:2rem}
+.field{margin-bottom:1.25rem}
+.field label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:0.4rem;font-weight:500}
+.field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.7rem 0.9rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s}
+.field input:focus{border-color:var(--accent)}
+.auth-switch{text-align:center;margin-top:1.25rem;font-size:0.85rem;color:var(--muted)}
+.auth-switch a{color:var(--accent);cursor:pointer;text-decoration:none}
+.error-msg{color:var(--error);font-size:0.8rem;margin-top:0.5rem;display:none}
+.success-msg{color:var(--success);font-size:0.8rem;margin-top:0.5rem;display:none}
+
+/* MODEL STATUS BANNER */
+.demo-banner{background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.5rem;font-size:0.82rem;color:#f85149;display:flex;align-items:center;gap:0.5rem}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .hero h1{font-size:2.2rem}
+  .info-grid{grid-template-columns:1fr}
+  .prob-item{grid-template-columns:110px 1fr 40px}
+  .result-header{grid-template-columns:auto 1fr}
+  .confidence-ring{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" onclick="showPage('home')">Breed<span>Scan</span></div>
+  <div class="nav-actions">
+    <button class="nav-tab active" onclick="showPage('home')" id="tab-home">Predict</button>
+    <button class="nav-tab" onclick="showPage('compare')" id="tab-compare">Compare</button>
+    <button class="nav-tab" onclick="showPage('history')" id="tab-history">History</button>
+    <div id="auth-nav"></div>
+  </div>
+</nav>
+
+<!-- HOME / PREDICT PAGE -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-badge">🐄 AI-Powered Breed Detection</div>
+    <h1>Image Based Breed Recoginition in cattle <br>using <em>Machine Learning</em></h1>
+    <p>Upload a photo of any cattle and our fine-tuned MobileNetV2 model will instantly identify the breed with detailed insights.</p>
+    <div class="breeds-strip">
+      <span class="breed-chip">Ayrshire</span>
+      <span class="breed-chip">Brown Swiss</span>
+      <span class="breed-chip">Gir</span>
+      <span class="breed-chip">Hariana</span>
+      <span class="breed-chip">Holstein Friesian</span>
+    </div>
+  </div>
+
+  <div class="upload-section">
+    <div id="demo-banner" class="demo-banner" style="display:none">
+      ⚠️ <strong>Demo Mode:</strong> model.keras not found. Showing simulated predictions. Place the .keras file in the app folder to enable real predictions.
+    </div>
+
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      <input type="file" id="file-input" accept="image/*" onchange="handleFile(this.files[0])">
+      <span class="drop-icon">📸</span>
+      <h3>Drop your cattle image here</h3>
+      <p>or click to browse from your device</p>
+      <div class="file-types">Supports JPG, PNG, WEBP · Max 10MB</div>
+    </div>
+
+    <div class="preview-container" id="preview-container">
+      <div class="preview-img-wrap">
+        <img id="preview-img" src="" alt="Preview">
+      </div>
+      <div class="preview-controls">
+        <span class="preview-name" id="preview-name"></span>
+        <button class="btn btn-ghost" onclick="clearImage()">✕ Clear</button>
+      </div>
+      <button class="btn-predict" id="predict-btn" onclick="predict()">
+        <span id="predict-btn-content">🔍 Identify Breed</span>
+      </button>
+    </div>
+
+    <div class="result-card" id="result-card">
+      <div class="result-header" id="result-header">
+        <div class="result-badge" id="result-badge">🐄</div>
+        <div>
+          <div class="result-title" id="result-title">—</div>
+          <div class="result-subtitle" id="result-subtitle">Predicted Breed</div>
+        </div>
+        <div class="confidence-ring">
+          <div class="confidence-pct" id="conf-pct">—</div>
+          <div class="confidence-label">Confidence</div>
+        </div>
+      </div>
+      <div class="result-tabs">
+        <button class="r-tab active" onclick="switchTab('info',this)">📋 Overview</button>
+        <button class="r-tab" onclick="switchTab('probs',this)">📊 All Breeds</button>
+      </div>
+      <div class="result-body">
+        <div class="tab-pane active" id="tab-info">
+          <div class="info-grid" id="info-grid"></div>
+          <div class="info-desc" id="info-desc"></div>
+        </div>
+        <div class="tab-pane" id="tab-probs">
+          <div class="prob-list" id="prob-list"></div>
+        </div>
+      </div>
+      <div style="padding:0 1.5rem 1.5rem">
+        <div class="save-row">
+          <button class="btn-save" id="save-btn" onclick="saveResult()">💾 Save to History</button>
+          <button class="btn-compare-add" onclick="addToCompare()">⚖️ Add to Compare</button>
+        </div>
+        <div id="save-msg" class="success-msg" style="display:none;margin-top:0.5rem">✅ Saved to your history!</div>
+        <div id="login-hint" style="display:none;text-align:center;margin-top:0.75rem;font-size:0.8rem;color:var(--muted)">
+          <a onclick="showPage('auth')" style="color:var(--accent);cursor:pointer">Log in</a> to save results and access history
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARE PAGE -->
+<div class="page" id="page-compare">
+  <div class="page-inner">
+    <div class="page-title">Breed Comparison</div>
+    <div class="page-sub">Select 2 or more breeds to compare their characteristics side by side.</div>
+    <div class="compare-select-row" id="compare-breed-btns"></div>
+    <div class="compare-table-wrap" id="compare-table-wrap" style="display:none">
+      <table id="compare-table"></table>
+    </div>
+    <div id="compare-empty" class="empty-state">
+      <div class="empty-icon">⚖️</div>
+      <p>Select at least 2 breeds above to see comparison</p>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div class="page" id="page-history">
+  <div class="page-inner">
+    <div class="page-title">Prediction History</div>
+    <div class="page-sub">Your saved cattle breed predictions.</div>
+    <div id="history-content"></div>
+  </div>
+</div>
+
+<!-- AUTH PAGE -->
+<div class="page" id="page-auth">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div id="login-form-wrap">
+        <div class="auth-title">Welcome back</div>
+        <div class="auth-sub">Log in to save predictions and compare breeds.</div>
+        <div class="field"><label>Username</label><input type="text" id="login-user" placeholder="your_username"></div>
+        <div class="field"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <div class="error-msg" id="login-error"></div>
+        <button class="btn btn-primary" style="width:100%;padding:0.75rem" onclick="doLogin()">Log In</button>
+        <div class="auth-switch">Don't have an account? <a onclick="toggleAuthForm('register')">Register here</a></div>
+      </div>
+      <div id="register-form-wrap" style="display:none">
+        <div class="auth-title">Create account</div>
+        <div class="auth-sub">Join to save your prediction history.</div>
+        <div class="field"><label>Username</label><input type="text" id="reg-user" placeholder="choose_a_username"></div>
+        <div class="field"><label>Email (optional)</label><input type="email" id="reg-email" placeholder="you@email.com"></div>
+        <div class="field"><label>Password</label><input type="password" id="reg-pass" placeholder="min 6 characters" onkeydown="if(event.key==='Enter')doRegister()"></div>
+        <div class="error-msg" id="reg-error"></div>
+        <button class="btn btn-primary" style="width:100%;padding:0.75rem" onclick="doRegister()">Create Account</button>
+        <div class="auth-switch">Already have an account? <a onclick="toggleAuthForm('login')">Log in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let currentUser = null;
+let currentResult = null;
+let compareBreeds = new Set();
+let allBreedInfo = {};
+
+const EMOJIS = {Ayrshire:'🟤',Brown_Swiss:'🟫',Gir:'🟠',Hariana:'🟢',Holstein_Friesian:'⚫'};
+
+// ─── INIT ───────────────────────────────────────────────────────────────────
+async function init() {
+  await checkAuth();
+  await checkModelStatus();
+  await loadBreedInfo();
+  renderCompareBreedBtns();
+}
+
+async function checkAuth() {
+  try {
+    const r = await fetch(`${API}/api/me`, {credentials:'include'});
+    const d = await r.json();
+    currentUser = d.logged_in ? d.username : null;
+    renderAuthNav();
+  } catch {}
+}
+
+async function checkModelStatus() {
+  try {
+    const r = await fetch(`${API}/api/model-status`);
+    const d = await r.json();
+    if (!d.loaded) document.getElementById('demo-banner').style.display = 'flex';
+  } catch {}
+}
+
+async function loadBreedInfo() {
+  try {
+    const r = await fetch(`${API}/api/breeds`);
+    allBreedInfo = await r.json();
+  } catch {}
+}
+
+function renderAuthNav() {
+  const el = document.getElementById('auth-nav');
+  if (currentUser) {
+    el.innerHTML = `<div class="user-badge">👤 ${currentUser}</div>
+    <button class="btn btn-ghost" onclick="doLogout()">Log out</button>`;
+  } else {
+    el.innerHTML = `<button class="btn btn-primary" onclick="showPage('auth')">Log in</button>`;
+  }
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  const tab = document.getElementById(`tab-${name}`);
+  if (tab) tab.classList.add('active');
+  if (name === 'history') loadHistory();
+}
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────────────────────
+function handleDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+function handleDragLeave() { document.getElementById('drop-zone').classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+}
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('preview-name').textContent = file.name;
+    document.getElementById('preview-container').style.display = 'block';
+    document.getElementById('result-card').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  document.getElementById('preview-container').style.display = 'none';
+  document.getElementById('result-card').style.display = 'none';
+  document.getElementById('file-input').value = '';
+}
+
+// ─── PREDICTION ─────────────────────────────────────────────────────────────
+async function predict() {
+  const fileInput = document.getElementById('file-input');
+  if (!fileInput.files[0]) return;
+  
+  const btn = document.getElementById('predict-btn');
+  const btnContent = document.getElementById('predict-btn-content');
+  btn.disabled = true;
+  btnContent.innerHTML = '<div class="spinner"></div> Analyzing...';
+
+  try {
+    const form = new FormData();
+    form.append('image', fileInput.files[0]);
+    const r = await fetch(`${API}/api/predict`, {method:'POST', body:form, credentials:'include'});
+    const data = await r.json();
+    if (r.ok) {
+      currentResult = data;
+      renderResult(data);
+    } else {
+      alert(data.error || 'Prediction failed');
+    }
+  } catch(e) {
+    alert('Could not connect to server. Make sure the Flask app is running.');
+  } finally {
+    btn.disabled = false;
+    btnContent.innerHTML = '🔍 Identify Breed Again';
+  }
+}
+
+function renderResult(data) {
+  const {breed, confidence, probabilities, info} = data;
+  document.getElementById('result-title').textContent = breed.replace('_',' ');
+  document.getElementById('result-subtitle').textContent = `Origin: ${info.origin}`;
+  document.getElementById('conf-pct').textContent = `${confidence}%`;
+  document.getElementById('result-badge').textContent = EMOJIS[breed] || '🐄';
+  
+  // Info grid
+  const fields = [
+    ['🌍 Origin', info.origin],
+    ['🥛 Milk Yield', info.milk_yield],
+    ['🌡️ Climate', info.climate],
+    ['🌾 Feed', info.food],
+    ['🧈 Fat Content', info.fat_content],
+    ['💪 Protein', info.protein],
+    ['⚖️ Weight', info.weight],
+    ['📅 Lifespan', info.lifespan]
+  ];
+  document.getElementById('info-grid').innerHTML = fields.map(([l,v]) =>
+    `<div class="info-item"><div class="info-label">${l}</div><div class="info-value">${v}</div></div>`
+  ).join('');
+  document.getElementById('info-desc').textContent = info.description;
+
+  // Probability bars
+  const sorted = Object.entries(probabilities).sort((a,b) => b[1]-a[1]);
+  document.getElementById('prob-list').innerHTML = sorted.map(([b,p]) =>
+    `<div class="prob-item">
+      <span class="prob-name">${b.replace('_',' ')}</span>
+      <div class="prob-bar-bg"><div class="prob-bar-fill ${b===breed?'top':'other'}" style="width:${p}%"></div></div>
+      <span class="prob-pct">${p}%</span>
+    </div>`
+  ).join('');
+
+  document.getElementById('result-card').style.display = 'block';
+  
+  // Auth hint
+  document.getElementById('save-btn').style.display = currentUser ? 'block' : 'none';
+  document.getElementById('login-hint').style.display = currentUser ? 'none' : 'block';
+  document.getElementById('save-msg').style.display = 'none';
+  
+  document.getElementById('result-card').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.r-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+function saveResult() {
+  if (!currentUser) { showPage('auth'); return; }
+  const msg = document.getElementById('save-msg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 3000);
+}
+
+// ─── COMPARE ─────────────────────────────────────────────────────────────────
+function addToCompare() {
+  if (!currentResult) return;
+  compareBreeds.add(currentResult.breed);
+  renderCompareBreedBtns();
+  showPage('compare');
+  renderCompareTable();
+}
+
+function renderCompareBreedBtns() {
+  const breeds = ['Ayrshire','Brown_Swiss','Gir','Hariana','Holstein_Friesian'];
+  document.getElementById('compare-breed-btns').innerHTML = breeds.map(b =>
+    `<button class="breed-select-btn ${compareBreeds.has(b)?'selected':''}" onclick="toggleCompareBreed('${b}')">
+      ${EMOJIS[b]} ${b.replace('_',' ')}
+    </button>`
+  ).join('');
+}
+
+function toggleCompareBreed(breed) {
+  if (compareBreeds.has(breed)) compareBreeds.delete(breed);
+  else compareBreeds.add(breed);
+  renderCompareBreedBtns();
+  renderCompareTable();
+}
+
+function renderCompareTable() {
+  const selected = [...compareBreeds];
+  const tableWrap = document.getElementById('compare-table-wrap');
+  const empty = document.getElementById('compare-empty');
+  
+  if (selected.length < 2) {
+    tableWrap.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  
+  tableWrap.style.display = 'block';
+  empty.style.display = 'none';
+  
+  const rows = [
+    ['Origin', 'origin'],
+    ['Milk Yield', 'milk_yield'],
+    ['Climate', 'climate'],
+    ['Feed', 'food'],
+    ['Fat Content', 'fat_content'],
+    ['Protein', 'protein'],
+    ['Weight', 'weight'],
+    ['Lifespan', 'lifespan'],
+  ];
+  
+  const thead = `<thead><tr><th>Trait</th>${selected.map(b=>`<th>${EMOJIS[b]} ${b.replace('_',' ')}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${rows.map(([label, key]) =>
+    `<tr><td>${label}</td>${selected.map(b => {
+      const info = allBreedInfo[b];
+      return `<td>${info ? info[key] : '—'}</td>`;
+    }).join('')}</tr>`
+  ).join('')}</tbody>`;
+  
+  document.getElementById('compare-table').innerHTML = thead + tbody;
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const el = document.getElementById('history-content');
+  if (!currentUser) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔐</div><p>Please <a onclick="showPage('auth')" style="color:var(--accent);cursor:pointer">log in</a> to view your history</p></div>`;
+    return;
+  }
+  try {
+    const r = await fetch(`${API}/api/history`, {credentials:'include'});
+    const history = await r.json();
+    if (!history.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No predictions saved yet. Predict a breed and save it!</p></div>`;
+      return;
+    }
+    el.innerHTML = `<div class="history-grid">${history.map((h, i) =>
+      `<div class="history-card">
+        <img class="hc-img" src="${h.image_url||''}" onerror="this.style.background='#1e2530'" alt="${h.breed}">
+        <div class="hc-body">
+          <div class="hc-breed">${h.breed.replace('_',' ')}</div>
+          <div class="hc-meta">
+            <span class="hc-conf">${h.confidence}% confidence</span>
+            <span class="hc-date">${new Date(h.timestamp).toLocaleDateString()}</span>
+          </div>
+          <button class="hc-del" onclick="deleteHistory(${i}, event)">🗑 Remove</button>
+        </div>
+      </div>`
+    ).join('')}</div>`;
+  } catch {
+    el.innerHTML = `<div class="empty-state"><p>Could not load history</p></div>`;
+  }
+}
+
+async function deleteHistory(idx, e) {
+  e.stopPropagation();
+  await fetch(`${API}/api/history/${idx}`, {method:'DELETE', credentials:'include'});
+  loadHistory();
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+function toggleAuthForm(mode) {
+  document.getElementById('login-form-wrap').style.display = mode === 'login' ? 'block' : 'none';
+  document.getElementById('register-form-wrap').style.display = mode === 'register' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  if (!username || !password) { showErr(errEl, 'Fill in all fields'); return; }
+  try {
+    const r = await fetch(`${API}/api/login`, {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username, password}), credentials:'include'});
+    const d = await r.json();
+    if (r.ok) { currentUser = username; renderAuthNav(); showPage('home'); }
+    else showErr(errEl, d.error || 'Login failed');
+  } catch { showErr(errEl, 'Cannot connect to server'); }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-user').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-pass').value;
+  const errEl = document.getElementById('reg-error');
+  if (!username || !password) { showErr(errEl, 'Username and password required'); return; }
+  if (password.length < 6) { showErr(errEl, 'Password must be at least 6 characters'); return; }
+  try {
+    const r = await fetch(`${API}/api/register`, {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username, email, password}), credentials:'include'});
+    const d = await r.json();
+    if (r.ok) { currentUser = username; renderAuthNav(); showPage('home'); }
+    else showErr(errEl, d.error || 'Registration failed');
+  } catch { showErr(errEl, 'Cannot connect to server'); }
+}
+
+async function doLogout() {
+  await fetch(`${API}/api/logout`, {method:'POST', credentials:'include'});
+  currentUser = null;
+  renderAuthNav();
+  showPage('home');
+}
+
+function showErr(el, msg) {
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+init();
+</script>
+</body>
+</html>
